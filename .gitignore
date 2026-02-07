@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# ML / data (large files – use scripts to download)
+models/*.pt
+models/*.pth
+models/*.onnx
+models/*.h5
+models/*.pkl
+!models/.gitkeep
+data/*.csv
+data/*.npy
+data/*.jpg
+data/*.png
+!data/.gitkeep
+
+# Results (keep sample in repo; ignore large raw runs)
+results/*.csv
+results/*.json
+!results/.gitkeep
+!results/sample_output.csv
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# AWS / env
+.env
+*.pem
+.aws/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# Logs
+*.log
+logs/

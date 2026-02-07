@@ -1,0 +1,20 @@
+# Core
+numpy>=1.21,<2
+requests>=2.28
+flask>=2.0
+
+# ML/DL models (training done locally; inference on EC2/Lambda as needed)
+scikit-learn>=1.1
+xgboost>=1.7
+torch>=2.0
+onnx>=1.12
+onnxruntime>=1.12
+onnxscript
+
+# Experiment and analysis
+pandas>=1.4
+boto3>=1.26
+
+# Optional: plotting for report
+# matplotlib>=3.5
+# seaborn>=0.12
