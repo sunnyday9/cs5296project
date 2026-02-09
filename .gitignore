@@ -15,7 +15,6 @@ build/
 # ML / data (large files – use scripts to download)
 models/*.pt
 models/*.pth
-models/*.onnx
 models/*.h5
 models/*.pkl
 !models/.gitkeep
