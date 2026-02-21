@@ -18,10 +18,6 @@ models/*.pth
 models/*.h5
 models/*.pkl
 !models/.gitkeep
-data/*.csv
-data/*.npy
-data/*.jpg
-data/*.png
 !data/.gitkeep
 
 # Results (keep sample in repo; ignore large raw runs)
