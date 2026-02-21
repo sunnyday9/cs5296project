@@ -18,7 +18,8 @@ def get_default_data_path() -> Path:
     return Path(__file__).resolve().parent.parent / "data" / "test_inputs.npy"
 
 
-def load_inputs(data_path: Path, max_samples: int):
+def load_inputs(data_path: Path, max_samples: int, seed=None):
+    """Load inputs from .npy. If file has fewer rows than max_samples, duplicate rows randomly to reach max_samples."""
     if not data_path.exists():
         raise FileNotFoundError(
             f"{data_path} not found. Run scripts/prepare_data.py --dataset adult (or cancer) first."
@@ -26,7 +27,14 @@ def load_inputs(data_path: Path, max_samples: int):
     X = np.load(data_path)
     if X.ndim == 1:
         X = X.reshape(1, -1)
-    return X[:max_samples].tolist()
+    n = X.shape[0]
+    if n >= max_samples:
+        X = X[:max_samples]
+    else:
+        rng = np.random.default_rng(seed)
+        indices = rng.choice(n, size=max_samples, replace=True)
+        X = X[indices]
+    return X.tolist()
 
 
 def main():
@@ -38,7 +46,7 @@ def main():
     args = parser.parse_args()
     base = args.url.rstrip("/")
     data_path = args.data or get_default_data_path()
-    inputs = load_inputs(data_path, args.num_requests)
+    inputs = load_inputs(data_path, args.num_requests, seed=args.seed)
 
     t_start = time.perf_counter()
     rows = []
