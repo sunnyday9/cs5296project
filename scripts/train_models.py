@@ -84,18 +84,23 @@ def train_mlp(X_train: np.ndarray, y_train: np.ndarray, input_dim: int, epochs: 
 
 
 def export_mlp_to_onnx(model: MLP, input_dim: int, out_path: Path):
+    """Export MLP to a single .onnx file (no separate .onnx.data)."""
+    import io
     model.eval()
     dummy = torch.zeros(1, input_dim, dtype=torch.float32)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    buffer = io.BytesIO()
     torch.onnx.export(
         model,
         dummy,
-        str(out_path),
+        buffer,
         input_names=["input"],
         output_names=["logits"],
         dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
-        opset_version=13,
+        opset_version=18,
     )
+    with open(out_path, "wb") as f:
+        f.write(buffer.getvalue())
     print(f"Saved ONNX model to {out_path}")
 
 
