@@ -7,6 +7,7 @@ import argparse
 import csv
 import json
 import sys
+import time
 from pathlib import Path
 
 import boto3
@@ -40,6 +41,7 @@ def main():
     inputs = load_inputs(data_path, args.num_requests)
     client = boto3.client("lambda", region_name=args.region)
 
+    t_start = time.perf_counter()
     rows = []
     for i, inp in enumerate(inputs):
         payload = json.dumps({"input": inp})
@@ -70,6 +72,7 @@ def main():
         except Exception as e:
             rows.append({"request_id": i, "latency_ms": None, "status": "error", "cold": 1 if i == 0 else 0})
             print(f"Request {i} failed: {e}", file=sys.stderr)
+    total_wall_clock_sec = time.perf_counter() - t_start
 
     out_path = args.output
     if out_path:
@@ -78,11 +81,21 @@ def main():
             w = csv.DictWriter(f, fieldnames=["request_id", "latency_ms", "status", "cold"])
             w.writeheader()
             w.writerows(rows)
+        summary = {
+            "num_requests": len(rows),
+            "total_wall_clock_sec": round(total_wall_clock_sec, 3),
+            "latency_csv": out_path.name,
+        }
+        summary_path = out_path.parent / (out_path.stem + "_summary.json")
+        with open(summary_path, "w") as f:
+            json.dump(summary, f, indent=2)
         print(f"Wrote {len(rows)} rows to {out_path}")
+        print(f"Total experiment time: {total_wall_clock_sec:.3f} s -> {summary_path}")
     else:
         w = csv.DictWriter(sys.stdout, fieldnames=["request_id", "latency_ms", "status", "cold"])
         w.writeheader()
         w.writerows(rows)
+        print(f"Total experiment time: {total_wall_clock_sec:.3f} s", file=sys.stderr)
 
 
 if __name__ == "__main__":
