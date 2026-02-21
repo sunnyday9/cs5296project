@@ -9,6 +9,7 @@ cancer_test_inputs.npy under data/.
 Writes data/test_inputs.npy (path configurable). Used for reproducible artifact inputs.
 """
 from pathlib import Path
+from typing import Optional
 import argparse
 import numpy as np
 
@@ -17,10 +18,10 @@ def get_default_data_dir() -> Path:
     return Path(__file__).resolve().parent.parent / "data"
 
 
-def copy_real_dataset(dataset: str, size: int, out_dir: Path) -> Path:
+def copy_real_dataset(dataset: str, size: int, out_dir: Path, out_name: Optional[str] = None) -> Path:
     """
-    Copy (optionally subsample) real test features prepared by train_models.py
-    into a common test_inputs.npy file.
+    Copy (optionally subsample) real test features prepared by train_models.py.
+    If out_name is given, write to out_dir / out_name; otherwise out_dir / test_inputs.npy.
     """
     base_dir = get_default_data_dir()
     if dataset == "adult":
@@ -39,7 +40,7 @@ def copy_real_dataset(dataset: str, size: int, out_dir: Path) -> Path:
     if size > 0 and size < X.shape[0]:
         X = X[:size]
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "test_inputs.npy"
+    out_path = (out_dir / out_name) if out_name else (out_dir / "test_inputs.npy")
     np.save(out_path, X.astype(np.float32))
     return out_path
 
@@ -54,9 +55,15 @@ def main():
         default="adult",
         help="Which dataset to use. Run scripts/train_models.py first to generate test features.",
     )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Output filename (e.g. test_inputs_adult_100.npy). Default: test_inputs.npy.",
+    )
     args = parser.parse_args()
     data_dir = args.data_dir or get_default_data_dir()
-    path = copy_real_dataset(args.dataset, args.size, data_dir)
+    path = copy_real_dataset(args.dataset, args.size, data_dir, args.output)
     print(f"Saved test data from '{args.dataset}' to {path} (size <= {args.size})")
 
 
