@@ -21,8 +21,7 @@ models/*.pkl
 !data/.gitkeep
 
 # Results (keep sample in repo; ignore large raw runs)
-results/*.csv
-results/*.json
+results/*
 !results/.gitkeep
 !results/sample_output.csv
 
