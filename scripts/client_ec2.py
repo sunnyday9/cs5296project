@@ -18,7 +18,7 @@ def get_default_data_path() -> Path:
     return Path(__file__).resolve().parent.parent / "data" / "test_inputs.npy"
 
 
-def load_inputs(data_path: Path, max_samples: int, seed=None):
+def load_inputs(data_path: Path, max_samples: int):
     """Load inputs from .npy. If file has fewer rows than max_samples, duplicate rows randomly to reach max_samples."""
     if not data_path.exists():
         raise FileNotFoundError(
@@ -31,7 +31,7 @@ def load_inputs(data_path: Path, max_samples: int, seed=None):
     if n >= max_samples:
         X = X[:max_samples]
     else:
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng()
         indices = rng.choice(n, size=max_samples, replace=True)
         X = X[indices]
     return X.tolist()
@@ -46,7 +46,7 @@ def main():
     args = parser.parse_args()
     base = args.url.rstrip("/")
     data_path = args.data or get_default_data_path()
-    inputs = load_inputs(data_path, args.num_requests, seed=args.seed)
+    inputs = load_inputs(data_path, args.num_requests)
 
     t_start = time.perf_counter()
     rows = []
