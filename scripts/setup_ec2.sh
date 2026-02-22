@@ -15,4 +15,4 @@ python3 ec2/server.py --host 0.0.0.0 --port 5000 --model-type xgb --dataset adul
 python3 scripts/resource_logger.py --interval 1 --output results/resource_ec2_xgb_n100.csv
 
 # run client
-python3 scripts/client_ec2.py --url http://<推理服务器IP>:5000 --num-requests 100 --data data/test_input.npy --output results/ec2_latencies.csv
+python3 scripts/client_ec2.py --url http://<EC2_PUBLIC_IP>:5000 --num-requests 100 --data data/test_input.npy --output results/ec2_latencies.csv
