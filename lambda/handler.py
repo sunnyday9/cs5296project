@@ -16,14 +16,13 @@ import time
 from pathlib import Path
 
 import numpy as np
-import onnxruntime as ort
-import xgboost as xgb
 
+# Lazy import so you can deploy XGB-only or MLP-only package (each under 250 MB)
 _XGB_MODEL = None
 _ONNX_SESSION = None
 _MODEL_TYPE = os.getenv("MODEL_TYPE", "xgb")
 _DATASET = os.getenv("DATASET", "adult")
-_MODEL_DIR = Path(os.getenv("MODEL_DIR", str(Path(__file__).resolve().parent.parent / "models")))
+_MODEL_DIR = Path(os.getenv("MODEL_DIR", str(Path(__file__).resolve().parent / "models")))
 
 
 def _load_models():
@@ -31,6 +30,7 @@ def _load_models():
     if _MODEL_TYPE == "xgb":
         if _XGB_MODEL is not None:
             return
+        import xgboost as xgb
         if _DATASET not in {"adult", "cancer"}:
             raise ValueError(f"Unsupported dataset for XGBoost: {_DATASET}")
         model_path = _MODEL_DIR / f"{_DATASET}_xgb.json"
@@ -41,6 +41,7 @@ def _load_models():
     elif _MODEL_TYPE == "mlp":
         if _ONNX_SESSION is not None:
             return
+        import onnxruntime as ort  # noqa: F401
         if _DATASET not in {"adult", "cancer"}:
             raise ValueError(f"Unsupported dataset for MLP: {_DATASET}")
         model_path = _MODEL_DIR / f"{_DATASET}_mlp.onnx"
@@ -75,11 +76,13 @@ def lambda_handler(event, context):
             result = prob.reshape(-1).tolist()
 
         latency_ms = (time.perf_counter() - t0) * 1000
+        memory_mb = getattr(context, "memory_limit_in_mb", None)
         return {
             "statusCode": 200,
             "body": json.dumps({
                 "result": result,
                 "latency_ms": round(latency_ms, 2),
+                "memory_mb": memory_mb,
                 "model_type": _MODEL_TYPE,
                 "dataset": _DATASET,
                 "request_id": getattr(context, "aws_request_id", ""),
@@ -88,8 +91,13 @@ def lambda_handler(event, context):
         }
     except Exception as e:
         latency_ms = (time.perf_counter() - t0) * 1000
+        memory_mb = getattr(context, "memory_limit_in_mb", None)
         return {
             "statusCode": 500,
-            "body": json.dumps({"error": str(e), "latency_ms": round(latency_ms, 2)}),
+            "body": json.dumps({
+                "error": str(e),
+                "latency_ms": round(latency_ms, 2),
+                "memory_mb": memory_mb,
+            }),
             "headers": {"Content-Type": "application/json"},
         }

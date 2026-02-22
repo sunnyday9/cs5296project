@@ -90,6 +90,7 @@ def export_mlp_to_onnx(model: MLP, input_dim: int, out_path: Path):
     dummy = torch.zeros(1, input_dim, dtype=torch.float32)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     buffer = io.BytesIO()
+    # dynamo=False: use legacy exporter so opset_version=9 is respected (Lambda onnxruntime supports up to IR 9)
     torch.onnx.export(
         model,
         dummy,
@@ -97,7 +98,8 @@ def export_mlp_to_onnx(model: MLP, input_dim: int, out_path: Path):
         input_names=["input"],
         output_names=["logits"],
         dynamic_axes={"input": {0: "batch"}, "logits": {0: "batch"}},
-        opset_version=18,
+        opset_version=9,
+        dynamo=False,
     )
     with open(out_path, "wb") as f:
         f.write(buffer.getvalue())

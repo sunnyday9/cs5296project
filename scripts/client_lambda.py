@@ -19,6 +19,7 @@ def get_default_data_path() -> Path:
 
 
 def load_inputs(data_path: Path, max_samples: int):
+    """Load inputs from .npy. If file has fewer rows than max_samples, duplicate rows randomly to reach max_samples (same as client_ec2)."""
     if not data_path.exists():
         raise FileNotFoundError(
             f"{data_path} not found. Run scripts/prepare_data.py --dataset adult (or cancer) first."
@@ -26,7 +27,14 @@ def load_inputs(data_path: Path, max_samples: int):
     X = np.load(data_path)
     if X.ndim == 1:
         X = X.reshape(1, -1)
-    return X[:max_samples].tolist()
+    n = X.shape[0]
+    if n >= max_samples:
+        X = X[:max_samples]
+    else:
+        rng = np.random.default_rng()
+        indices = rng.choice(n, size=max_samples, replace=True)
+        X = X[indices]
+    return X.tolist()
 
 
 def main():
@@ -59,18 +67,16 @@ def main():
             else:
                 inner = body.get("body") or body
             latency_ms = inner.get("latency_ms")
-            # Billed duration is in ms in response (optional)
-            duration_ms = resp.get("ResponseMetadata", {}).get("HTTPHeaders", {}).get("x-amzn-requestid")
-            # Actual duration from Lambda logs or use latency_ms as proxy
-            billed_ms = resp.get("StatusCode") == 200 and (latency_ms or 0) or None
+            memory_mb = inner.get("memory_mb")
             rows.append({
                 "request_id": i,
                 "latency_ms": latency_ms,
+                "memory_mb": memory_mb,
                 "status": resp["StatusCode"],
                 "cold": 1 if i == 0 else 0,
             })
         except Exception as e:
-            rows.append({"request_id": i, "latency_ms": None, "status": "error", "cold": 1 if i == 0 else 0})
+            rows.append({"request_id": i, "latency_ms": None, "memory_mb": None, "status": "error", "cold": 1 if i == 0 else 0})
             print(f"Request {i} failed: {e}", file=sys.stderr)
     total_wall_clock_sec = time.perf_counter() - t_start
 
@@ -78,7 +84,7 @@ def main():
     if out_path:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", newline="") as f:
-            w = csv.DictWriter(f, fieldnames=["request_id", "latency_ms", "status", "cold"])
+            w = csv.DictWriter(f, fieldnames=["request_id", "latency_ms", "memory_mb", "status", "cold"])
             w.writeheader()
             w.writerows(rows)
         summary = {
@@ -92,7 +98,7 @@ def main():
         print(f"Wrote {len(rows)} rows to {out_path}")
         print(f"Total experiment time: {total_wall_clock_sec:.3f} s -> {summary_path}")
     else:
-        w = csv.DictWriter(sys.stdout, fieldnames=["request_id", "latency_ms", "status", "cold"])
+        w = csv.DictWriter(sys.stdout, fieldnames=["request_id", "latency_ms", "memory_mb", "status", "cold"])
         w.writeheader()
         w.writerows(rows)
         print(f"Total experiment time: {total_wall_clock_sec:.3f} s", file=sys.stderr)
