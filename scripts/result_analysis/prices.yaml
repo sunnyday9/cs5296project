@@ -1,0 +1,31 @@
+# Configurable prices for cost analysis (edit these values).
+# Amounts are in USD. Sources: AWS us-east-1 list prices (approximate).
+
+lambda:
+  # Price per 1 million requests
+  price_per_million_requests: 0.20
+  # Duration cost: at 128 MB, price per millisecond (USD). Converts to $/GB-s for calculation.
+  # Equivalent: 0.0000000021 per ms at 128 MB = 0.0000168 $/GB-s (used for first tier if tiers present).
+  price_per_ms_at_128_mb: 0.0000000021
+  # Tiered price per GB-second (AWS-style: first 6B, next 9B, then rest)
+  # Each tier: up to limit_gb_sec (null = no limit) at this price per GB-s
+  # First tier can be overridden by price_per_ms_at_128_mb (see analyze.py).
+  gb_second_tiers:
+    - limit_gb_sec: 6000000000    # first 6 billion GB-s
+      price_per_gb_sec: 0.0000168   # from price_per_ms_at_128_mb: 0.0000000021 * 8000
+    - limit_gb_sec: 15000000000   # next 9 billion (6B to 15B)
+      price_per_gb_sec: 0.000015
+    - limit_gb_sec: null          # all above 15 billion GB-s
+      price_per_gb_sec: 0.0000133334
+
+ec2:
+  # Price per hour for each instance type (used when matching by filename or tag)
+  price_per_hour_by_type:
+    t2.micro: 0.0116
+    t3.micro: 0.0104
+    t2.medium: 0.0464
+  # Default if instance type cannot be inferred from filename
+  default_price_per_hour: 0.0116
+  # EBS gp2 storage (applied to all EC2 runs): size in GB and price per GB per month (USD)
+  ebs_gp2_gb: 30
+  ebs_gp2_price_per_gb_month: 0.1

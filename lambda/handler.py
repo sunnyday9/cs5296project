@@ -1,23 +1,9 @@
-"""
-Lambda handler for ML/DL inference on tabular data.
-
-Supports two model types (same artifacts as EC2 server):
-- XGBoost: <dataset>_xgb.json
-- MLP (ONNX): <dataset>_mlp.onnx
-
-Environment variables control behaviour:
-- MODEL_TYPE: "xgb" or "mlp"
-- DATASET: "adult" or "cancer"
-- MODEL_DIR (optional): directory containing model files (default: ../models)
-"""
 import json
 import os
 import time
 from pathlib import Path
-
 import numpy as np
 
-# Lazy import so you can deploy XGB-only or MLP-only package (each under 250 MB)
 _XGB_MODEL = None
 _ONNX_SESSION = None
 _MODEL_TYPE = os.getenv("MODEL_TYPE", "xgb")

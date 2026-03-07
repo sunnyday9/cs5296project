@@ -1,34 +1,21 @@
-#!/usr/bin/env python3
-"""
-EC2 inference server: HTTP API that runs model inference and returns result + timing.
-
-This version supports two real model types on tabular data:
-- XGBoost (tree-based model)
-- MLP exported to ONNX (deep neural network)
-
-You are expected to run scripts/train_models.py locally to produce the model
-artifacts under models/ and test feature arrays under data/ first.
-"""
 import argparse
 import time
 import json
 from pathlib import Path
-
 import numpy as np
 from flask import Flask, request, jsonify
 import onnxruntime as ort
 import xgboost as xgb
 
 app = Flask(__name__)
-MODEL_TYPE = None  # "xgb" or "mlp"
-DATASET = None  # "adult" or "cancer"
+MODEL_TYPE = None
+DATASET = None
 MODEL_DIR: Path | None = None
 XGB_MODEL: xgb.XGBClassifier | None = None
 ONNX_SESSION: ort.InferenceSession | None = None
 
 
 def load_models(model_dir: Path, model_type: str, dataset: str):
-    """Load the appropriate model(s) into memory."""
     global XGB_MODEL, ONNX_SESSION
     if model_type == "xgb":
         if XGB_MODEL is not None:
@@ -64,7 +51,6 @@ def health():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    """Accept JSON body: {"input": list of floats} or {"batch": list of lists}. Return prediction + latency_ms."""
     global MODEL_DIR, MODEL_TYPE, DATASET
     t0 = time.perf_counter()
     try:
@@ -73,20 +59,16 @@ def predict():
         arr = np.array(inp, dtype=np.float32)
         if arr.ndim == 1:
             arr = arr.reshape(1, -1)
-        # Run inference according to model type
         if MODEL_TYPE == "xgb":
             if XGB_MODEL is None:
                 raise RuntimeError("XGBoost model not loaded.")
-            # XGBoost expects 2D array
             proba = XGB_MODEL.predict_proba(arr)
-            # Return probability of positive class
             result = proba[:, 1].tolist()
         elif MODEL_TYPE == "mlp":
             if ONNX_SESSION is None:
                 raise RuntimeError("ONNX session not initialized.")
             input_name = ONNX_SESSION.get_inputs()[0].name
             logits = ONNX_SESSION.run(None, {input_name: arr.astype(np.float32)})[0]
-            # Apply sigmoid to get probability
             prob = 1.0 / (1.0 + np.exp(-logits))
             result = prob.reshape(-1).tolist()
         else:

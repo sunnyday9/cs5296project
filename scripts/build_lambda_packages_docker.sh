@@ -22,14 +22,14 @@ check_docker() {
 IMAGE="public.ecr.aws/lambda/python:3.11"
 
 build_xgb() {
-    echo "Building XGB-only package in Docker (numpy, xgboost, scipy)..."
+    echo "Building XGB-only package in Docker (numpy, xgboost, scipy, scikit-learn, joblib, threadpoolctl)..."
     docker run --rm --entrypoint bash \
         -v "${PROJECT_ROOT}:/workspace" \
         -w /workspace \
         "$IMAGE" \
         -c '
             rm -rf _docker_build_xgb
-            /var/lang/bin/pip install --no-cache-dir --only-binary :all: "numpy<2" xgboost scipy -t _docker_build_xgb --no-deps --quiet
+            /var/lang/bin/pip install --no-cache-dir --only-binary :all: "numpy<2" xgboost scipy scikit-learn joblib threadpoolctl -t _docker_build_xgb --no-deps --quiet
             find _docker_build_xgb -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
             find _docker_build_xgb -name "*.pyc" -delete 2>/dev/null || true
         '
