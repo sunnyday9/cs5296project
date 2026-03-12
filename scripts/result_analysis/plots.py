@@ -56,9 +56,8 @@ def plot_latency_distribution(
         cdf = np.arange(1, len(s) + 1, dtype=float) / len(s)
         ax2.plot(s, cdf, label=label)
     if all_vals:
-        combined = np.concatenate(all_vals)
-        x_max = float(np.percentile(combined, 98))
-        x_max = max(2.0, min(x_max * 1.1, 200.0))
+        # Clamp the x-axis range to focus on the main body of the distribution
+        x_max = 15.0
         ax1.set_xlim(left=0, right=x_max)
         ax2.set_xlim(left=0, right=x_max)
     ax1.set_xlabel("Latency (ms)")
