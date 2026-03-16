@@ -24,6 +24,7 @@ models/*.pkl
 results/*
 !results/.gitkeep
 !results/sample_output.csv
+ppt/*
 
 # IDE / OS
 .idea/
